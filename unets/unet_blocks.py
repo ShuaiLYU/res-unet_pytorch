@@ -117,3 +117,54 @@ class Unet_Encoder(nn.Module):
             inputs=block(inputs)
             features.append(inputs)
         return features
+
+
+
+class UNet(nn.Module):
+    def __init__(self,n_classes,base_channels=64,level=5,padding=0,norm_layer=None,bilinear=True):
+        super(UNet, self).__init__()
+        self.level=level
+        self.base_channels=base_channels
+        self.norm_layer=norm_layer
+        self.padding=padding
+        self.bilinear=bilinear
+        self.encoder=self.build_encoder()
+        self.decoder=self.build_decoder()
+        self.outBlock=nn.Conv2d(base_channels,n_classes,1,1)
+    def build_encoder(self):
+        return Unet_Encoder(in_channels=3, base_channels=self.base_channels, level=self.level, padding=self.padding)
+    def build_decoder(self):
+        decoder=nn.ModuleList()
+        for i in range(self.level-1): #有 self.level-1 个上采样块
+            in_channels= self.base_channels*(2**(self.level-i-1))
+            out_channels= self.base_channels*(2**(self.level-i-2))
+            decoder.append(UNetUpBlock(in_channels,out_channels,
+                                       padding=self.padding,norm_layer= self.norm_layer,bilinear=self.bilinear))
+        return  decoder
+
+    def forward(self,x):
+        features=self.encoder(x)
+        # for feat in features:
+        #     print(feat.shape)
+        assert len(features)==self.level
+        x=features[-1]
+        for i,up_block in enumerate(self.decoder):
+            x=up_block(x,features[-2-i])
+            #print("shape:{}".format(x.shape))
+        if self.outBlock is not None:
+            x=self.outBlock(x)
+        return  x
+
+
+if __name__=="__main__":
+
+    ipt=torch.rand(1,3,572,572)
+
+    unet1=UNet(10,base_channels=16,level=5)
+    opt = unet1(ipt)
+    print(opt.shape)
+
+    unet2=UNet(10,base_channels=16,level=5,padding=1)
+    opt = unet2(ipt)
+    print(opt.shape)
+
