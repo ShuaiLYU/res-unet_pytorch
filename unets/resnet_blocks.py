@@ -115,6 +115,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block,  base_planes*4//block.expansion, layers[1], stride=2)
         self.layer3 = self._make_layer(block,  base_planes*8//block.expansion, layers[2], stride=2)
         self.layer4 = self._make_layer(block,  base_planes*16//block.expansion, layers[3], stride=2)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -143,11 +144,13 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)  # 使用Sequential层组合blocks，形成stage。如果layers=[2,3,4]，那么*layers=？
 
     def forward(self, x):
-        x0 = self.input_stem(x)
-        x1 = self.layer1(self.maxpool(x0))
-        x2 = self.layer2(x1)
-        x3 = self.layer3(x2)
-        x4 = self.layer4(x3)
+        #[ b，c, h，w] c=1 or c=3
+        x0 = self.input_stem(x)                 #[b,c1,h, w]
+        x1 = self.layer1(self.maxpool(x0))    #[b,c2,h//2, w//2]
+        x2 = self.layer2(x1)      #[b,c3,h//4, w//4]
+        x3 = self.layer3(x2)   #[b,c4,h//8, w//8]
+        x4 = self.layer4(x3)  #[b,c5,h//16, w//16]
+
         return [x0,x1,x2,x3,x4]
 
 def _resnet(arch, block, layers, pretrained=False, **kwargs):

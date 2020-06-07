@@ -84,6 +84,8 @@ class UNetUpBlock(nn.Module):
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
 
+
+
 class UNetDownBlock(nn.Module):
     """maxpooling-unetblock"""
 
@@ -143,7 +145,7 @@ class UNet(nn.Module):
         return  decoder
 
     def forward(self,x):
-        features=self.encoder(x)
+        features=self.encoder(x)[0:self.level]
         # for feat in features:
         #     print(feat.shape)
         assert len(features)==self.level
@@ -153,6 +155,7 @@ class UNet(nn.Module):
             #print("shape:{}".format(x.shape))
         if self.outBlock is not None:
             x=self.outBlock(x)
+        #加一个softmax激活函数 或则sigmoid也行
         return  x
 
 
