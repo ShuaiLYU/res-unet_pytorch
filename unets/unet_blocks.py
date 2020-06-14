@@ -132,7 +132,7 @@ class UNet(nn.Module):
         self.bilinear=bilinear
         self.encoder=self.build_encoder()
         self.decoder=self.build_decoder()
-        self.outBlock=nn.Conv2d(base_channels,n_classes,1,1)
+        self.outBlock=nn.Sequential(nn.Conv2d(base_channels,n_classes,1,1),nn.Sigmoid())
     def build_encoder(self):
         return Unet_Encoder(in_channels=3, base_channels=self.base_channels, level=self.level, padding=self.padding)
     def build_decoder(self):
